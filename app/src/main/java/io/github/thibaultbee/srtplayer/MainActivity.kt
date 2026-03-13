@@ -16,16 +16,19 @@
 package io.github.thibaultbee.srtplayer
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.ViewModelProvider
+import androidx.media3.common.util.UnstableApi
 import androidx.preference.PreferenceManager
 import io.github.thibaultbee.srtplayer.databinding.ActivityMainBinding
 
+@UnstableApi
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private val viewModel: MainActivityViewModel by lazy {
-        ViewModelProvider(this).get(MainActivityViewModel::class.java)
+        ViewModelProvider(this)[MainActivityViewModel::class.java]
     }
 
     /**

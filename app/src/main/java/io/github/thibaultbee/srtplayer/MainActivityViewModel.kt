@@ -20,14 +20,27 @@ import androidx.annotation.OptIn
 import androidx.lifecycle.AndroidViewModel
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.LoadControl
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import io.github.thibaultbee.srtplayer.player.SrtDataSourceFactory
 import io.github.thibaultbee.srtplayer.player.TsOnlyExtractorFactory
 
+@UnstableApi
 class MainActivityViewModel(application: Application) : AndroidViewModel(application) {
-    val player = ExoPlayer.Builder(getApplication()).build()
+    val loadControl: LoadControl = DefaultLoadControl.Builder()
+        .setBufferDurationsMs(
+            500,
+            1000,
+            500,
+            500
+        )
+        .build()
+    val player: ExoPlayer = ExoPlayer.Builder(getApplication())
+        .setLoadControl(loadControl)
+        .build()
 
     @OptIn(UnstableApi::class)
     fun setMediaItem(url: String, passphrase: String) {
