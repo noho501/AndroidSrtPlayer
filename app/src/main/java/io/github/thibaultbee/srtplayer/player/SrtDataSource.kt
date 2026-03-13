@@ -99,8 +99,7 @@ class SrtDataSource :
         }
 
         //If there is too much data (approximately > 0.5 seconds)
-        if (byteQueue.size > 500) { // Nếu tồn đọng quá nhiều (khoảng > 0.5s dữ liệu)
-            Log.w(TAG, "Dọn dẹp buffer bị trễ: ${byteQueue.size} gói")
+        if (byteQueue.size > 500) {
             byteQueue.clear() // Wipe everything clean to start receiving the latest plan (Realtime)
         }
 
