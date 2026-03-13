@@ -18,11 +18,13 @@ package io.github.thibaultbee.srtplayer.player
 import android.net.Uri
 import android.util.Log
 import androidx.annotation.OptIn
+import androidx.core.net.toUri
 import androidx.media3.common.C
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.BaseDataSource
 import androidx.media3.datasource.DataSpec
 import androidx.media3.extractor.ts.TsExtractor.TS_PACKET_SIZE
+import io.github.thibaultbee.srtdroid.core.enums.SockOpt
 import io.github.thibaultbee.srtdroid.core.enums.Transtype
 import io.github.thibaultbee.srtdroid.core.extensions.connect
 import io.github.thibaultbee.srtdroid.core.models.SrtSocket
@@ -30,7 +32,6 @@ import io.github.thibaultbee.srtdroid.core.models.SrtUrl
 import java.io.IOException
 import java.util.LinkedList
 import java.util.Queue
-import androidx.core.net.toUri
 
 @UnstableApi
 class SrtDataSource :
@@ -46,6 +47,9 @@ class SrtDataSource :
     private var srtUrl: SrtUrl? = null
 
     override fun open(dataSpec: DataSpec): Long {
+        val streamId = dataSpec.uri.getQueryParameter("streamid")
+        val passPhrase = dataSpec.uri.getQueryParameter("passphrase")
+
         val srtUrl = SrtUrl(dataSpec.uri)
         if (srtUrl.transtype != null) {
             require(srtUrl.transtype == Transtype.LIVE) { "Only live mode is supported but ${srtUrl.transtype}" }
@@ -58,6 +62,21 @@ class SrtDataSource :
         }
 
         socket = SrtSocket().apply {
+            val latency = srtUrl.srtUri.getQueryParameter("latency")?.toInt() ?: 100
+            setSockFlag(SockOpt.LATENCY, latency)
+            setSockFlag(SockOpt.RCVBUF, 120000)
+
+            setSockFlag(SockOpt.TRANSTYPE, Transtype.LIVE)
+            setSockFlag(SockOpt.PAYLOADSIZE, PAYLOAD_SIZE)
+
+            passPhrase?.let {
+                setSockFlag(SockOpt.PASSPHRASE, it)
+            }
+            streamId?.let {
+                setSockFlag(SockOpt.STREAMID, it)
+            }
+            dataSpec.key?.let { setSockFlag(SockOpt.PASSPHRASE, it) }
+
             Log.i(TAG, "Connecting to ${srtUrl.hostname}:${srtUrl.port}.")
             connect(srtUrl)
         }
@@ -77,6 +96,11 @@ class SrtDataSource :
     override fun read(buffer: ByteArray, offset: Int, length: Int): Int {
         if (length == 0) {
             return 0
+        }
+
+        //If there is too much data (approximately > 0.5 seconds)
+        if (byteQueue.size > 500) {
+            byteQueue.clear() // Wipe everything clean to start receiving the latest plan (Realtime)
         }
 
         socket?.let {
